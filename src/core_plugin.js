@@ -610,58 +610,124 @@
             }
 
             if (wh < clip) {
-                while (true) {
-                    curr = this.items().eq(++idx);
+                // left or right?
+                var direction  = 'right',
+                    steps;
+                if(this.circular) {
+                    var current = this.index(this._target);
+                    var len = this.items().length;
+                    steps = Math.abs(index - current);
+                    if(steps < (len / 2)) { // no wrap needed
+                        direction = index < current ? 'left' : 'right';
+                    } else { // need to wrap
+                        direction = index < current ? 'right' : 'left';
+                        steps = len - steps;
+                    }
+                }
 
-                    if (curr.length === 0) {
-                        if (!this.circular) {
+                if(direction === 'right') {
+                    while (true) {
+                        curr = this.items().eq(++idx);
+
+                        if (curr.length === 0) {
+                            if (!this.circular) {
+                                break;
+                            }
+
+                            curr = this.items().eq(0);
+
+                            if (item.get(0) === curr.get(0)) {
+                                break;
+                            }
+
+                            isVisible = this._visible.index(curr) >= 0;
+
+                            if (isVisible) {
+                                curr.after(curr.clone(true).attr('data-jcarousel-clone', true));
+                            }
+
+                            this.list().append(curr);
+
+                            if (!isVisible) {
+                                var props = {};
+                                props[this.lt] = this.dimension(curr);
+                                this.moveBy(props);
+                            }
+
+                            // Force items reload
+                            this._items = null;
+                        }
+
+                        dim = this.dimension(curr);
+
+                        if (dim === 0) {
                             break;
                         }
 
-                        curr = this.items().eq(0);
+                        wh += dim;
 
-                        if (item.get(0) === curr.get(0)) {
+                        update.last    = curr;
+                        update.visible = update.visible.add(curr);
+
+                        // Remove right/bottom margin from total width
+                        margin = toFloat(curr.css('margin-' + lrb));
+
+                        if ((wh - margin) <= clip) {
+                            update.fullyvisible = update.fullyvisible.add(curr);
+                        }
+
+                        if (wh >= clip) {
+                            break;
+                        }
+                    }
+                } else { // direction is left
+                    idx = this.index(this._target);
+                    while (steps-- > 0) {
+                        curr = this.items().eq(--idx);
+
+                        if (idx < 0) {
+                            if (!this.circular) {
+                                break;
+                            }
+                            idx = 0;
+
+                            curr = this.items().eq(-1);
+
+                            isVisible = this._visible.index(curr) >= 0;
+
+                            if (isVisible) {
+                                curr.after(curr.clone(true).attr('data-jcarousel-clone', true));
+                            }
+
+                            this.list().prepend(curr);
+
+                            if (!isVisible) {
+                                var props = {};
+                                props[this.lt] = -this.dimension(curr);
+                                this.moveBy(props);
+                            }
+
+                            // Force items reload
+                            this._items = null;
+                        }
+
+                        dim = this.dimension(curr);
+
+                        if (dim === 0) {
                             break;
                         }
 
-                        isVisible = this._visible.index(curr) >= 0;
+                        wh += dim;
 
-                        if (isVisible) {
-                            curr.after(curr.clone(true).attr('data-jcarousel-clone', true));
+                        update.first   = curr;
+                        update.visible = update.visible.add(curr);
+
+                        // Remove right/bottom margin from total width
+                        margin = toFloat(curr.css('margin-' + lrb));
+
+                        if ((wh - margin) <= clip) {
+                            update.fullyvisible = update.fullyvisible.add(curr);
                         }
-
-                        this.list().append(curr);
-
-                        if (!isVisible) {
-                            var props = {};
-                            props[this.lt] = this.dimension(curr);
-                            this.moveBy(props);
-                        }
-
-                        // Force items reload
-                        this._items = null;
-                    }
-
-                    dim = this.dimension(curr);
-
-                    if (dim === 0) {
-                        break;
-                    }
-
-                    wh += dim;
-
-                    update.last    = curr;
-                    update.visible = update.visible.add(curr);
-
-                    // Remove right/bottom margin from total width
-                    margin = toFloat(curr.css('margin-' + lrb));
-
-                    if ((wh - margin) <= clip) {
-                        update.fullyvisible = update.fullyvisible.add(curr);
-                    }
-
-                    if (wh >= clip) {
-                        break;
                     }
                 }
             }
